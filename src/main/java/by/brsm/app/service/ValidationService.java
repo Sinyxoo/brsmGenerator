@@ -55,7 +55,7 @@ public class ValidationService {
         if (item.getSupporter() == null) {
             errors.add(prefix + "выберите выступившего.");
         }
-        if (item.getSpeaker() == null && item.getType() != AgendaTypeCode.FREEFORM) {
+        if (item.getSpeaker() == null) {
             errors.add(prefix + "не определён докладчик (СЛУШАЛИ).");
         }
         if (item.getVotesFor() < 1) {

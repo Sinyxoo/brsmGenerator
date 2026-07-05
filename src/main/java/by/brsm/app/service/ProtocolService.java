@@ -61,15 +61,18 @@ public class ProtocolService {
     }
 
     public GenerationResult generateDocuments(Protocol protocol) throws Exception {
-        List<String> errors = validate(protocol);
-        if (!errors.isEmpty()) {
-            throw new IllegalStateException(String.join("\n", errors));
-        }
-
+        // Докладчик по умолчанию определяется правилом по типу вопроса (см. SpeakerResolver).
+        // Это нужно сделать ДО валидации, иначе валидатор всегда будет требовать
+        // докладчика вручную даже там, где он выводится автоматически.
         for (AgendaItem item : protocol.getItems()) {
             if (item.getSpeaker() == null) {
                 item.setSpeaker(speakerResolver.resolveSlushaliSpeaker(item, protocol));
             }
+        }
+
+        List<String> errors = validate(protocol);
+        if (!errors.isEmpty()) {
+            throw new IllegalStateException(String.join("\n", errors));
         }
 
         List<Integer> attendeeIds = protocol.getAttendees().stream().map(Person::getId).toList();

@@ -1,7 +1,10 @@
 package by.brsm.app.ui;
 
 import by.brsm.app.AppContext;
-import by.brsm.app.model.*;
+import by.brsm.app.model.AgendaItem;
+import by.brsm.app.model.Administrator;
+import by.brsm.app.model.Person;
+import by.brsm.app.model.Protocol;
 import by.brsm.app.service.ProtocolService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -11,16 +14,14 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.File;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Главный контроллер приложения
+ * Главный контроллер приложения.
  */
 public class MainController {
 
@@ -32,9 +33,9 @@ public class MainController {
     @FXML private DatePicker datePicker;
     @FXML private Spinner<Integer> protocolNumberSpinner;
     @FXML private ComboBox<Administrator> chairmanCombo;
-    @FXML private ComboBox<FacultySecretary> secretaryCombo;
+    @FXML private ComboBox<Administrator> secretaryCombo;
     @FXML private Spinner<Integer> defaultVotesSpinner;
-    @FXML private ListView<Administrator> attendeesList;
+    @FXML private ListView<Person> attendeesList;
     @FXML private VBox agendaItemsContainer;
     @FXML private TableView<Protocol> historyTable;
 
@@ -52,9 +53,10 @@ public class MainController {
 
             setupSpinners();
             setupComboboxes();
+            setupAttendeesList();
             setupHistoryTable();
             loadHistory();
-            newProtocol(); // Создаём новый протокол при старте
+            onNewProtocol(); // Создаём новый протокол при старте
 
         } catch (Exception e) {
             showError("Ошибка инициализации", e.getMessage());
@@ -67,37 +69,52 @@ public class MainController {
         defaultVotesSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 50, 15));
     }
 
-    private void setupComboboxes() {
-        // Председатели
-        chairmanCombo.setItems(FXCollections.observableArrayList(context.getAdministratorDao().findAll()));
-        chairmanCombo.setConverter(new StringConverterForAdministrator()); // Нужно реализовать ниже
+    private void setupComboboxes() throws java.sql.SQLException {
+        // Председатель и секретарь заседания выбираются из общего справочника администрации комитета.
+        List<Administrator> administrators = context.getAdministratorDao().findAllActive();
+        chairmanCombo.setItems(FXCollections.observableArrayList(administrators));
+        secretaryCombo.setItems(FXCollections.observableArrayList(administrators));
+        // Administrator.toString() (унаследован от Person) уже возвращает shortName,
+        // поэтому отдельный StringConverter не требуется.
+    }
 
-        // Секретари
-        secretaryCombo.setItems(FXCollections.observableArrayList(context.getFacultySecretaryDao().findAll()));
-        secretaryCombo.setConverter(new StringConverterForSecretary());
+    private void setupAttendeesList() throws java.sql.SQLException {
+        List<Person> selectable = new ArrayList<>();
+        selectable.addAll(context.getAdministratorDao().findAllActive());
+        selectable.addAll(context.getFacultySecretaryDao().findAllActive());
+        attendeesList.setItems(FXCollections.observableArrayList(selectable));
+        attendeesList.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
     }
 
     private void setupHistoryTable() {
         historyNumberColumn.setCellValueFactory(cell ->
-                new javafx.beans.property.SimpleStringProperty(cell.getValue().getNumber()));
+                new javafx.beans.property.SimpleStringProperty(String.valueOf(cell.getValue().getNumber())));
         historyDateColumn.setCellValueFactory(cell ->
-                new javafx.beans.property.SimpleStringProperty(cell.getValue().getDate().toString()));
+                new javafx.beans.property.SimpleStringProperty(String.valueOf(cell.getValue().getDate())));
         historyItemsColumn.setCellValueFactory(cell ->
-                new javafx.beans.property.SimpleIntegerProperty(cell.getValue().getAgendaItems().size()).asObject());
+                new javafx.beans.property.SimpleIntegerProperty(cell.getValue().getItems().size()).asObject());
 
         historyTable.setItems(historyList);
     }
 
     private void loadHistory() {
-        historyList.clear();
-        historyList.addAll(protocolService.getAllProtocols());
+        try {
+            historyList.clear();
+            historyList.addAll(protocolService.loadHistory());
+        } catch (Exception e) {
+            showError("Ошибка загрузки истории", e.getMessage());
+        }
     }
 
     @FXML
     private void onNewProtocol() {
         currentProtocol = new Protocol();
         currentProtocol.setDate(LocalDate.now());
-        currentProtocol.setNumber(String.valueOf(protocolNumberSpinner.getValue()));
+        try {
+            currentProtocol.setNumber(protocolService.suggestNextProtocolNumber());
+        } catch (Exception e) {
+            currentProtocol.setNumber(1);
+        }
 
         clearForm();
         agendaCardControllers.clear();
@@ -105,11 +122,11 @@ public class MainController {
 
     private void clearForm() {
         datePicker.setValue(currentProtocol.getDate());
-        protocolNumberSpinner.getValueFactory().setValue(1);
+        protocolNumberSpinner.getValueFactory().setValue(currentProtocol.getNumber());
         chairmanCombo.getSelectionModel().clearSelection();
         secretaryCombo.getSelectionModel().clearSelection();
         defaultVotesSpinner.getValueFactory().setValue(15);
-        attendeesList.getItems().clear();
+        attendeesList.getSelectionModel().clearSelection();
         agendaItemsContainer.getChildren().clear();
     }
 
@@ -121,7 +138,9 @@ public class MainController {
 
             AgendaItemCardController cardController = loader.getController();
             cardController.setMainController(this);
+            cardController.setDefaultVotes(defaultVotesSpinner.getValue());
             agendaCardControllers.add(cardController);
+            renumberAgendaCards();
 
             agendaItemsContainer.getChildren().add(card);
         } catch (Exception e) {
@@ -138,12 +157,18 @@ public class MainController {
         try {
             ProtocolService.GenerationResult result = protocolService.generateDocuments(currentProtocol);
 
-            showInfo("Генерация завершена",
-                    "Протокол успешно создан!\n\n" +
-                            "Файлы сохранены в:\n" + result.getProtocolPath());
+            StringBuilder message = new StringBuilder("Протокол успешно создан!\n\nФайл протокола:\n")
+                    .append(result.protocolFile());
+            if (!result.resolutions().isEmpty()) {
+                message.append("\n\nСформированные постановления:");
+                for (ProtocolService.GeneratedFile file : result.resolutions()) {
+                    message.append("\n").append(file.title()).append(": ").append(file.path());
+                }
+            }
+            showInfo("Генерация завершена", message.toString());
 
             loadHistory(); // Обновляем историю
-            newProtocol(); // Начинаем новый
+            onNewProtocol(); // Начинаем новый
 
         } catch (Exception e) {
             showError("Ошибка генерации документов", e.getMessage());
@@ -157,10 +182,14 @@ public class MainController {
             return false;
         }
         if (secretaryCombo.getValue() == null) {
-            showWarning("Ошибка", "Выберите секретаря");
+            showWarning("Ошибка", "Выберите секретаря заседания");
             return false;
         }
-        if (agendaItemsContainer.getChildren().isEmpty()) {
+        if (attendeesList.getSelectionModel().getSelectedItems().isEmpty()) {
+            showWarning("Ошибка", "Отметьте хотя бы одного присутствующего");
+            return false;
+        }
+        if (agendaCardControllers.isEmpty()) {
             showWarning("Ошибка", "Добавьте хотя бы один вопрос повестки дня");
             return false;
         }
@@ -169,20 +198,21 @@ public class MainController {
 
     private void collectFormData() {
         currentProtocol.setDate(datePicker.getValue());
-        currentProtocol.setNumber(String.valueOf(protocolNumberSpinner.getValue()));
+        currentProtocol.setNumber(protocolNumberSpinner.getValue());
         currentProtocol.setChairman(chairmanCombo.getValue());
-        currentProtocol.setSecretary(secretaryCombo.getValue());
+        currentProtocol.setMeetingSecretary(secretaryCombo.getValue());
+        currentProtocol.setDefaultVotesFor(defaultVotesSpinner.getValue());
 
         // Присутствующие
         currentProtocol.getAttendees().clear();
-        currentProtocol.getAttendees().addAll(attendeesList.getItems());
+        currentProtocol.getAttendees().addAll(attendeesList.getSelectionModel().getSelectedItems());
 
         // Повестка дня
-        currentProtocol.getAgendaItems().clear();
+        currentProtocol.getItems().clear();
         for (AgendaItemCardController cardCtrl : agendaCardControllers) {
             AgendaItem item = cardCtrl.getAgendaItem();
             if (item != null) {
-                currentProtocol.getAgendaItems().add(item);
+                currentProtocol.getItems().add(item);
             }
         }
     }
@@ -198,8 +228,9 @@ public class MainController {
             stage.setScene(new Scene(root, 900, 600));
             stage.showAndWait();
 
-            // После закрытия обновляем комбобоксы
+            // После закрытия обновляем комбобоксы и список присутствующих
             setupComboboxes();
+            setupAttendeesList();
         } catch (Exception e) {
             showError("Ошибка открытия справочников", e.getMessage());
         }
@@ -214,11 +245,16 @@ public class MainController {
         }
 
         try {
-            File file = new File(selected.getProtocolPath());
+            String path = selected.getFilePath();
+            if (path == null) {
+                showWarning("Файл не найден", "Для этого протокола файл ещё не был сформирован.");
+                return;
+            }
+            File file = new File(path);
             if (file.exists()) {
                 java.awt.Desktop.getDesktop().open(file);
             } else {
-                showWarning("Файл не найден", "Файл протокола не найден по пути: " + selected.getProtocolPath());
+                showWarning("Файл не найден", "Файл протокола не найден по пути: " + path);
             }
         } catch (Exception e) {
             showError("Ошибка открытия файла", e.getMessage());
@@ -235,6 +271,13 @@ public class MainController {
     public void removeAgendaCard(VBox card, AgendaItemCardController controller) {
         agendaItemsContainer.getChildren().remove(card);
         agendaCardControllers.remove(controller);
+        renumberAgendaCards();
+    }
+
+    private void renumberAgendaCards() {
+        for (int i = 0; i < agendaCardControllers.size(); i++) {
+            agendaCardControllers.get(i).setOrder(i + 1);
+        }
     }
 
     // Утилиты уведомлений

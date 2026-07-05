@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:id="root"
       fx:controller="by.brsm.app.ui.AgendaItemCardController"
       spacing="8" style="-fx-border-color: #cccccc; -fx-border-radius: 6; -fx-background-color: #fafafa;">
     <padding>

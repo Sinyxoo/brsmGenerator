@@ -79,9 +79,10 @@ public class TextBuilderService {
 
     public String buildVystupiliText(AgendaItem item, Person speaker, Person supporter) {
         if (item.getType() == AgendaTypeCode.FREEFORM) {
-            return String.valueOf(item.getFields().getOrDefault("customVystupiliText",
-                    supporter.getShortName() + " с предложением поддержать выступление "
-                            + speaker.getShortName() + " " + buildSlushaliTopic(item) + "."));
+            Object custom = item.getFields().get("customVystupiliText");
+            if (custom != null && !String.valueOf(custom).isBlank()) {
+                return String.valueOf(custom);
+            }
         }
         return supporter.getShortName() + " с предложением поддержать выступление "
                 + speaker.getShortName() + " " + buildSlushaliTopic(item) + ".";
