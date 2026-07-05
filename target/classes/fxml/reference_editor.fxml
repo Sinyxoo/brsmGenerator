@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="by.brsm.app.ui.ReferenceEditorController"
+            prefWidth="900" prefHeight="600">
+    <center>
+        <TabPane fx:id="tabPane" BorderPane.alignment="CENTER">
+            <Tab text="Факультеты" closable="false">
+                <VBox spacing="8">
+                    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                    <TableView fx:id="facultyTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="facultyShortColumn" text="Краткое название" prefWidth="150"/>
+                            <TableColumn fx:id="facultyFullColumn" text="Полное название" prefWidth="300"/>
+                        </columns>
+                    </TableView>
+                    <HBox spacing="8">
+                        <Button text="Добавить" onAction="#onAddFaculty"/>
+                        <Button text="Сохранить" onAction="#onSaveFaculty"/>
+                    </HBox>
+                </VBox>
+            </Tab>
+            <Tab text="Секретари факультетов" closable="false">
+                <VBox spacing="8">
+                    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                    <TableView fx:id="secretaryTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="secShortColumn" text="Фамилия И.О." prefWidth="150"/>
+                            <TableColumn fx:id="secGenitiveColumn" text="ФИО (род. падеж)" prefWidth="250"/>
+                            <TableColumn fx:id="secFacultyColumn" text="Факультет" prefWidth="100"/>
+                            <TableColumn fx:id="secActiveColumn" text="Активен" prefWidth="70"/>
+                        </columns>
+                    </TableView>
+                    <HBox spacing="8">
+                        <Button text="Добавить" onAction="#onAddSecretary"/>
+                        <Button text="Сохранить" onAction="#onSaveSecretary"/>
+                        <Button text="Деактивировать" onAction="#onDeactivateSecretary"/>
+                    </HBox>
+                </VBox>
+            </Tab>
+            <Tab text="Администрация" closable="false">
+                <VBox spacing="8">
+                    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                    <TableView fx:id="adminTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="adminShortColumn" text="Фамилия И.О." prefWidth="150"/>
+                            <TableColumn fx:id="adminGenitiveColumn" text="ФИО (род. падеж)" prefWidth="250"/>
+                            <TableColumn fx:id="adminRoleColumn" text="Роль" prefWidth="150"/>
+                            <TableColumn fx:id="adminActiveColumn" text="Активен" prefWidth="70"/>
+                        </columns>
+                    </TableView>
+                    <HBox spacing="8">
+                        <Button text="Добавить" onAction="#onAddAdmin"/>
+                        <Button text="Сохранить" onAction="#onSaveAdmin"/>
+                        <Button text="Деактивировать" onAction="#onDeactivateAdmin"/>
+                    </HBox>
+                </VBox>
+            </Tab>
+            <Tab text="Штабы" closable="false">
+                <VBox spacing="8">
+                    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                    <TableView fx:id="staffTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="staffShortColumn" text="Краткое название" prefWidth="180"/>
+                            <TableColumn fx:id="staffFullColumn" text="Полное название" prefWidth="350"/>
+                        </columns>
+                    </TableView>
+                    <HBox spacing="8">
+                        <Button text="Добавить" onAction="#onAddStaff"/>
+                        <Button text="Сохранить" onAction="#onSaveStaff"/>
+                    </HBox>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+    <bottom>
+        <HBox alignment="CENTER_RIGHT">
+            <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+            <Button text="Закрыть" onAction="#onClose"/>
+        </HBox>
+    </bottom>
+</BorderPane>

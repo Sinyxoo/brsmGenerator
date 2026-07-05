@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="by.brsm.app.ui.MainController"
+            prefWidth="1200" prefHeight="800">
+
+    <top>
+        <VBox spacing="8">
+            <MenuBar>
+                <Menu text="Файл">
+                    <MenuItem text="Новый протокол" onAction="#onNewProtocol"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Выход" onAction="#onExit"/>
+                </Menu>
+                <Menu text="Справочники">
+                    <MenuItem text="Редактировать справочники..." onAction="#onOpenReferences"/>
+                </Menu>
+            </MenuBar>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <padding>
+                    <Insets top="0" right="10" bottom="10" left="10"/>
+                </padding>
+                <Button text="Новый протокол" onAction="#onNewProtocol"/>
+                <Button text="Сформировать документы" onAction="#onGenerate" style="-fx-font-weight: bold;"/>
+                <Button text="Справочники" onAction="#onOpenReferences"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <SplitPane dividerPositions="0.25">
+            <VBox spacing="8">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <Label text="История протоколов" style="-fx-font-weight: bold;"/>
+                <TableView fx:id="historyTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="historyNumberColumn" text="№" prefWidth="50"/>
+                        <TableColumn fx:id="historyDateColumn" text="Дата" prefWidth="100"/>
+                        <TableColumn fx:id="historyItemsColumn" text="Вопросов" prefWidth="80"/>
+                    </columns>
+                </TableView>
+                <Button text="Открыть файл протокола" onAction="#onOpenSelectedProtocol"/>
+            </VBox>
+
+            <ScrollPane fitToWidth="true">
+                <VBox spacing="12" fx:id="formContainer">
+                    <padding>
+                        <Insets top="10" right="20" bottom="20" left="20"/>
+                    </padding>
+
+                    <Label text="Реквизиты протокола" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    <GridPane hgap="12" vgap="8">
+                        <Label text="Дата:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <DatePicker fx:id="datePicker" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                        <Label text="Номер:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <Spinner fx:id="protocolNumberSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <Label text="Председатель:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <ComboBox fx:id="chairmanCombo" prefWidth="280" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                        <Label text="Секретарь заседания:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <ComboBox fx:id="secretaryCombo" prefWidth="280" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                        <Label text="Голосов «за» (общее):" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <Spinner fx:id="defaultVotesSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                    </GridPane>
+
+                    <Separator/>
+                    <Label text="Присутствовали" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <ListView fx:id="attendeesList" prefHeight="180" VBox.vgrow="NEVER"/>
+
+                    <Separator/>
+                    <Label text="Повестка дня" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    <VBox fx:id="agendaItemsContainer" spacing="10"/>
+                    <Button text="+ Добавить вопрос повестки дня" onAction="#onAddAgendaItem"/>
+                </VBox>
+            </ScrollPane>
+        </SplitPane>
+    </center>
+</BorderPane>
