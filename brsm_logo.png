@@ -1,0 +1,90 @@
+package by.brsm.app.model;
+
+/**
+ * Базовая сущность «человек» для справочников секретарей факультетов и администрации.
+ */
+public class Person {
+
+    /** Идентификатор записи в базе данных. */
+    private int id;
+
+    /** Полное ФИО в родительном падеже, например «Позневича Кирилла Юрьевича». */
+    private String fullNameGenitive;
+
+    /** Краткая форма ФИО, например «Позневич К.Ю.». */
+    private String shortName;
+
+    /** Признак активности записи (неактивные скрываются из списков выбора). */
+    private boolean active = true;
+
+    public Person() {
+    }
+
+    public Person(int id, String fullNameGenitive, String shortName, boolean active) {
+        this.id = id;
+        this.fullNameGenitive = fullNameGenitive;
+        this.shortName = shortName;
+        this.active = active;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getFullNameGenitive() {
+        return fullNameGenitive;
+    }
+
+    public void setFullNameGenitive(String fullNameGenitive) {
+        this.fullNameGenitive = fullNameGenitive;
+    }
+
+    public String getShortName() {
+        return shortName;
+    }
+
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    /**
+     * Краткая форма ФИО в родительном/винительном падеже, например «Позневича К.Ю.».
+     *
+     * <p>Для одушевлённых существительных мужского и женского рода в русском языке
+     * винительный падеж фамилии совпадает с родительным, поэтому одна и та же форма
+     * используется и в блоке «СЛУШАЛИ» (винительный: «слушали Позневича»), и в
+     * конструкциях с родительным падежом («информацию … Позневича»).</p>
+     *
+     * <p>Форма строится автоматически: берётся первое слово (склонённая фамилия) из
+     * {@link #fullNameGenitive} и к нему добавляются инициалы из {@link #shortName}
+     * (всё, что стоит после фамилии — обычно «И.О.»). Если данные не заполнены,
+     * возвращается исходное {@link #shortName} без изменений.</p>
+     */
+    public String getShortNameGenitive() {
+        if (fullNameGenitive == null || fullNameGenitive.isBlank()
+                || shortName == null || shortName.isBlank()) {
+            return shortName;
+        }
+        String declinedSurname = fullNameGenitive.trim().split("\\s+")[0];
+        int spaceIdx = shortName.indexOf(' ');
+        String initials = spaceIdx >= 0 ? shortName.substring(spaceIdx) : "";
+        return declinedSurname + initials;
+    }
+
+    @Override
+    public String toString() {
+        return shortName;
+    }
+}
